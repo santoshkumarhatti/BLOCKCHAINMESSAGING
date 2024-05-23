@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Military Communication</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+</head>
+
+<body style="background-color: #61a5c2;">
+  <div class="container p-3">
+    <div class="row">
+      <div class="col">
+        <button onclick="back()" class="btn btn-primary">Logout</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="container">
+    <div class="row p-5">
+      <div class="col">
+        <h1 style="text-align: center;">Militray Communication</h1>
+        <h6 style="text-align: center;">Made By AI TITAN</h6>
+      </div>
+    </div>
+    
+    <div class="row justify-content-end">
+      <div class="col-6">
+        <h6 style="text-align: right;" id="Profile"></h6>
+      </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <input type="text" class="form-control" id="searchInput" onkeyup="filterAddresses()" placeholder="Search for addresses..">
+      </div>
+    </div>
+
+    <div class="accordion accordion-flush" id="accordionFlushExample">
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.7.4/web3.min.js"
+    integrity="sha512-oMd9Re3VgJcXuZJn9DN6X7S7JUc7xLYZ2UyZ85Mm/xzaW3lwBr4fV2zjuu/n5jY/Of/2JOx35CTa6zvQNxb31Q=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="application/json" src="Abi.json" id="imp"></script>
+  <script>
+      var myaccount = localStorage.getItem("myaddress");
+
+      let abi = [
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "message",
+              "type": "string"
+            },
+            {
+              "indexed": false,
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "timestamp",
+              "type": "string"
+            }
+          ],
+          "name": "message",
+          "type": "event"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_to",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "_message",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "time",
+              "type": "string"
+            }
+          ],
+          "name": "sendMessage",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }
+      ];
+      let contractAddress = '0xE406d5d958d3B6E95dbA914E5aBADe843869d157';
+
+      window.onload = function () {
+        if (myaccount == null) {
+          window.location.replace('index.html');
+        }
+        add();
+      };
+
+      function back() {
+        localStorage.removeItem("myaddress");
+        window.location.replace('index.html');
+      }
+
+      function addMessages(a) {
+        var id = "messagepart" + a.id;
+        let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
+        let mycontract = new web3.eth.Contract(abi, contractAddress);
+        mycontract.getPastEvents('message', {
+          fromBlock: 0,
+          toBlock: 'latest',
+        }, function (err, data) {
+          let x = data.length;
+          document.getElementById(id).innerHTML = '';
+          for (var n = 0; n < x; n++) {
+            if (data[n].returnValues.from == a.id && data[n].returnValues.to == myaccount) {
+              var timestamp = data[n].returnValues.timestamp;
+              var decoration = '<div class="row justify-content-end">' +
+                '<div class="col-4 col-md-auto">' +
+                '<div class="alert alert-dark" role="alert">' +
+                data[n].returnValues.message +
+                '<h6 style="font-size: 0.6em;">received ' + timestamp + '</h6>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+              document.getElementById(id).innerHTML += decoration;
+            } else if (data[n].returnValues.to == a.id && data[n].returnValues.from == myaccount) {
+              var timestamp = data[n].returnValues.timestamp;
+              var decoration = '<div class="row justify-content-start">' +
+                '<div class="col-4 col-md-auto">' +
+                '<div class="alert alert-primary" role="alert">' +
+                data[n].returnValues.message +
+                '<h6 style="font-size: 0.6em;">sent ' + timestamp + '</h6>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+              document.getElementById(id).innerHTML += decoration;
+            }
+          }
+          document.getElementById(id).innerHTML += '<div class="input-group mb-0" id="groupinputbutton' + a.id + '">' +
+            '<input type="text" class="form-control" placeholder="Type message" id="inputbutton' + a.id + '" aria-label="Recipient username" aria-describedby="button-addon2" />' +
+            '<button class="btn btn-warning" type="button" onclick="onSend(this)" id="button' + a.id + '" style="padding-top: .55rem;">Send</button>' +
+            '</div>';
+        });
+      }
+
+      function onSend(det) {
+        var inputId = "inputbutton" + det.id.replace('button', '');
+        var messageElement = document.getElementById(inputId);
+        if (!messageElement) {
+          console.error('Message input element not found');
+          return;
+        }
+        var message = messageElement.value;
+        var to = det.id.replace('button', '');
+        let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
+        let mycontract = new web3.eth.Contract(abi, contractAddress);
+        var date = new Date().toLocaleDateString("IN");
+        var time = new Date().toLocaleTimeString("IN");
+        time = time.split('.');
+        var accurateTime = date + ' ' + time[0] + ':' + time[1];
+
+        mycontract.methods.sendMessage(to, message, accurateTime).send({ from: myaccount }, function (err, transactionHash) {
+          if (err) {
+            console.log(err);
+          } else {
+            var decoration = '<div class="row justify-content-start">' +
+              '<div class="col-4 col-md-auto">' +
+              '<div class="alert alert-primary" role="alert">' +
+              message +
+              '<h6 style="font-size: 0.6em;">sent ' + accurateTime + '</h6>' +
+              '</div>' +
+              '</div>' +
+              '</div>';
+            var buttonText = document.getElementById("groupinputbutton" + to).innerHTML;
+            document.getElementById("groupinputbutton" + to).remove();
+            document.getElementById("messagepart" + to).innerHTML += decoration;
+            document.getElementById("messagepart" + to).innerHTML += '<div class="input-group mb-0" id="groupinputbutton' + to + '">' +
+              '<input type="text" class="form-control" placeholder="Type message" id="inputbutton' + to + '" aria-label="Recipient username" aria-describedby="button-addon2" />' +
+              '<button class="btn btn-warning" type="button" onclick="onSend(this)" id="button' + to + '" style="padding-top: .55rem;">Send</button>' +
+              '</div>';
+            document.getElementById("groupinputbutton" + to).scrollIntoView();
+          }
+        });
+      }
+
+      function add() {
+        let web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
+        web3.eth.getAccounts(function (error, accounts) {
+          var n = accounts.length;
+          var temp = '';
+          for (var i = 0; i < n; i++) {
+            if (accounts[i] == myaccount) {
+              continue;
+            }
+            temp += '<div class="accordion-item p-3 border-primary" style="background-color: #ADD8E6;">'+
+              '<h2 class="accordion-header" id="flush-heading' + accounts[i] + '">' +
+              '<button id="' + accounts[i] + '" class="accordion-button collapsed" type="button" onclick="addMessages(this)" data-bs-toggle="collapse" data-bs-target="#flush-collapse' + accounts[i] + '" aria-expanded="false" aria-controls="flush-collapse' + accounts[i] + '">' +
+              accounts[i] +
+              '</button>' +
+              '</h2>' +
+              '<div id="flush-collapse' + accounts[i] + '" class="accordion-collapse collapse" aria-labelledby="flush-heading' + accounts[i] + '" data-bs-parent="#accordionFlushExample">' +
+              '<div class="accordion-body" id="messagepart' + accounts[i] + '"></div>' +
+              '</div>' +
+              '</div>';
+          }
+          document.getElementById("accordionFlushExample").innerHTML = temp;
+          document.getElementById("Profile").innerHTML = 'Account: ' + myaccount;
+        });
+      }
+
+      function filterAddresses() {
+        var input, filter, accordion, items, buttons, i, txtValue;
+        input = document.getElementById('searchInput');
+        filter = input.value.toUpperCase();
+        accordion = document.getElementById("accordionFlushExample");
+        items = accordion.getElementsByClassName('accordion-item');
+        for (i = 0; i < items.length; i++) {
+          buttons = items[i].getElementsByTagName("button")[0];
+          txtValue = buttons.textContent || buttons.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            items[i].style.display = "";
+          } else {
+            items[i].style.display = "none";
+          }
+        }
+      }
+  </script>
+</body>
+
+</html>
